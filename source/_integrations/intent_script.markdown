@@ -46,7 +46,7 @@ intent:
       description: List of domains that the entity supports.
       required: false
       type: list
-    actions:
+    action:
       description: Defines an action to run to intents.
       required: false
       type: action
