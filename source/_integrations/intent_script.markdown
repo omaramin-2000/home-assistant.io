@@ -109,7 +109,7 @@ conversation:
 
 intent_script:
   EventCountToday:
-    actions:
+    action:
       - action: calendar.get_events
         target:
           entity_id: calendar.my_calendar
