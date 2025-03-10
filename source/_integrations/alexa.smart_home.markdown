@@ -60,6 +60,7 @@ Steps to Integrate an Amazon Alexa Smart Home Skill with Home Assistant:
     - [Open/Close/Raise/Lower](#opencloseraiselower)
     - [Set Cover Position](#set-cover-position)
     - [Set Cover Tilt](#set-cover-tilt)
+    - [Stop the Covers operation](#stop-the-covers-operation)
     - [Garage doors](#garage-doors)
   - [Event entities](#event-entities)
     - [Doorbell events](#doorbell-events)
@@ -86,6 +87,7 @@ Steps to Integrate an Amazon Alexa Smart Home Skill with Home Assistant:
     - [Equalizer Mode](#equalizer-mode)
     - [Inputs](#inputs)
     - [Playback State](#playback-state)
+  - [Remote](#remote)
   - [Scene](#scene)
   - [Script](#script)
   - [Sensor](#sensor)
@@ -148,8 +150,8 @@ The first thing you need to do after signing into the [AWS console](https://cons
 Next you need create a Lambda function.
 
 - Click `Services` in top navigation bar, expand the menu to display all AWS services, then under `Compute` section click `Lambda` to navigate to Lambda console. Or you may use this [link](https://console.aws.amazon.com/lambda/home)
-- **IMPORTANT - Alexa Skills are only supported in certain AWS regions** Your current server location will be displayed on the top right corner (for example, Ohio), make sure you select the server closest to your location / region based on your Amazon account's country, whilst also ensuring that it is within one of the supported regions for Alexa Skills otherwise this will not work!
-  - **US East (N.Virginia)** region for English (US) or English (CA) skills
+**IMPORTANT - Alexa Skills are only supported in specific AWS regions.** Your current server location will be displayed in the top-right corner (for example, Ohio). Select an available server from the list below ([reference](https://developer.amazon.com/en-US/docs/alexa/smarthome/develop-smart-home-skills-in-multiple-languages.html#deploy)) based on your Amazon account's locale, not your physical location. **Alexa Lambda functions created in other regions will not work properly and may prevent account linking! For example, if your locale is set to English (US) and you live in California, you must use US East (N.Virginia), not US West (Oregon). While the setup process will complete with an incorrect region, the skill will not function, and there will be no clear error messages indicating the cause.**
+  - **US East (N.Virginia)** region for English (US), English (CA) or Portuguese (BR) skills
   - **EU (Ireland)** region for English (UK), English (IN), German (DE), Spanish (ES) or French (FR) skills
   - **US West (Oregon)** region for Japanese and English (AU) skills.
 
@@ -230,19 +232,23 @@ Now remove the long-lived access token (if you want), copy the ARN of your Lambd
 
 ## Account linking
 
-Alexa needs to link your Amazon account to your Home Assistant account. Therefore Home Assistant can make sure only authenticated Alexa requests are able to access your home's devices. In order to link the account, you have to make sure your Home Assistant can be accessed from Internet at port 443.
+Alexa needs to link your Amazon account to your Home Assistant account. Therefore Home Assistant can make sure only authenticated Alexa requests are able to access your home's devices. In order to link the account, you have to make sure your Home Assistant can be accessed from Internet.
 
 - Return to the [Alexa Developer Console][alexa-dev-console], go to `Alexa Skills` page if you are not.
 - Find the skill you just created, click `Edit` link in the `Actions` column.
 - Click `ACCOUNT LINKING` in the left navigation bar of build page
 - Do not turn on the "Allow users to link their account to your skill from within your application or website" switch. This will require a Redirect URI, which won't work.
-- Input all information required. Assuming your Home Assistant can be accessed by `https://[YOUR HOME ASSISTANT URL]`. For Alexa account linking, by default, the standard port 443 is used. Use your firewall to forward this, if needed:
-  - `Authorization URI`: `https://[YOUR HOME ASSISTANT URL]/auth/authorize`
-  - `Access Token URI`: `https://[YOUR HOME ASSISTANT URL]/auth/token`
+- Input all information required. Assuming your Home Assistant can be accessed by `https://[YOUR HOME ASSISTANT URL][:PORT]`, where `PORT` is the TCP port. The port can be omitted if it is `443`. For Alexa account linking, by default, the standard port 443 is used by default. Use your firewall to forward this, if needed:
+  - `Authorization URI`: `https://[YOUR HOME ASSISTANT URL][:PORT]/auth/authorize`
+  - `Access Token URI`: `https://[YOUR HOME ASSISTANT URL][:PORT]/auth/token`
 
-    Although it is possible to assign a different port, Alexa requires you use port 443, so make sure your firewall/proxy is forwarding via port 443.
+    Although it is possible to assign a different port, it is preferable to use port 443, so in that case make sure your firewall/proxy is forwarding via port 443.
 
     Read [more from the Alexa developer documentation](https://developer.amazon.com/en-US/docs/alexa/account-linking/requirements-account-linking.html) about requirements for account linking.
+
+    {% note %}
+    Despite the Alexa documentation's disclaimer, however, [Let's Encrypt](https://letsencrypt.org/) certificates are still accepted.
+    {% endnote %}
 
 {% important %}
 You must use a valid/trusted SSL certificate for account linking to work.
@@ -250,7 +256,7 @@ Self signed certificates will not work, but you can use a free Let's Encrypt cer
 {% endimportant %}
 
 - `Client ID`:
-  - `https://pitangui.amazon.com/` if you are in US
+  - `https://pitangui.amazon.com/` if you are in US or BR
   - `https://layla.amazon.com/` if you are in EU
   - `https://alexa.amazon.co.jp/` if you are in JP and AU (not verified yet)
 
@@ -317,7 +323,7 @@ alexa:
       type: map
       keys:
         locale:
-          description: The locale of your Alexa devices. Supported locales are `de-DE`,  `en-AU`, `en-CA`, `en-GB`, `en-IN`, `en-US`, `es-ES`, `es-MX`, `fr-CA`, `fr-FR`, `it-IT`, `ja-JP`. See [Alexa Locale](#alexa-locale) for additional information.
+          description: The locale of your Alexa devices. Supported locales are `de-DE`,  `en-AU`, `en-CA`, `en-GB`, `en-IN`, `en-US`, `es-ES`, `es-MX`, `es-US`,`fr-CA`, `fr-FR`, `hi-IN`, `it-IT`, `ja-JP`, `nl-NL`, and `pt-BR`. See [Alexa Locale](#alexa-locale) for additional information.
           required: false
           type: string
           default: en-US
@@ -410,6 +416,7 @@ The supported locales are:
 - `hi-IN`
 - `it-IT`
 - `ja-JP`
+- `nl-NL`
 - `pt-BR`
 
 See [List of Capability Interfaces and Supported Locales][alexa-supported-locales].
@@ -496,7 +503,7 @@ Users must opt-in to the disarm by voice feature in the Alexa App. Alexa will re
 
 To use the existing code configured for the alarm control panel the `code` must be 4 digits and the `code_format` attribute must be `number`. After discovery, the Alexa app will offer the ability to use the existing `code`, or create an additional 4 digit PIN to use with Alexa.
 
-The existing code is never communicated to Alexa from Home Assistant. During disarming, Alexa will ask for a PIN. The PIN spoken to Alexa is relayed to Home Assistant and passed to the `alarm_control_panel.alarm_disarm` service. If the `alarm_control_panel.alarm_disarm` service fails for any reason, it is assumed the PIN was incorrect and reported to Alexa as an invalid PIN.
+The existing code is never communicated to Alexa from Home Assistant. During disarming, Alexa will ask for a PIN. The PIN spoken to Alexa is relayed to Home Assistant and passed to the `alarm_control_panel.alarm_disarm` action. If the `alarm_control_panel.alarm_disarm` action fails for any reason, it is assumed the PIN was incorrect and reported to Alexa as an invalid PIN.
 
 ### Alert, Automation, Group
 
@@ -705,6 +712,16 @@ Covers that support tilt position can be controlled using percentages.
 | `en-US` | _"tilt"_, _"angle"_, _"direction"_ |
 
 Currently, Alexa only supports friendly name synonyms for the `en-US` locale.
+
+#### Stop the Covers operation
+
+To stop the covers operation, say:
+
+- _"Alexa, stop [entity name]."_
+
+If your cover supports the `STOP` feature, this will stop the cover operation.
+If your cover supports the `STOP_TILT` feature, this will stop the cover tilt operation.
+If both features are enabled, both the cover and the cover tilt will be stopped.
 
 #### Garage doors
 
@@ -940,6 +957,19 @@ Requires [Proactive Events](#proactive-events) enabled.
 
 {% note %}
 Intents to seek forwards (skip) or to rewind (go back) are not supported at the moment.
+{% endnote %}
+
+### Remote
+
+Supports changing the Remote `activity` from the given `activity_list`
+
+- _"Alexa, change the TV to PlayStation."_
+- _"Alexa, change the input on the TV to PlayStation."_
+
+{% note %}
+Alexa does not allow the following words to be used as activity names:
+
+`alarm`, `alarms`, `all alarms`, `away mode`, `bass`, `camera`, `date`, `date today`, `day`, `do not disturb`, `drop in`, `music`, `night light`, `notification`, `playing`, `sleep sounds`, `time`, `timer`, `today in music`, `treble`, `volume`, `way f. m.`
 {% endnote %}
 
 ### Scene

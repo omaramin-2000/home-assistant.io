@@ -38,7 +38,7 @@ Example of a JSON state update:
 {"state": "opening", "position": 10}
 ```
 
-The wanted position value or `payload_stop` will be published to `command_topic` to control the valve when the services `valve.open`, `value.close`, or `value.set_position` are called.
+The wanted position value or `payload_stop` will be published to `command_topic` to control the valve when the actions `valve.open`, `value.close`, or `value.set_position` are called.
 
 To use your MQTT valve in your installation, add the following to your {% term "`configuration.yaml`" %} file:
 
@@ -130,6 +130,10 @@ device:
       description: The model of the device.
       required: false
       type: string
+    model_id:
+      description: The model identifier of the device.
+      required: false
+      type: string
     name:
       description: The name of the device.
       required: false
@@ -151,7 +155,7 @@ device:
       required: false
       type: string
 device_class:
-  description: Sets the [class of the device](/integrations/valve/), changing the device state and icon that is displayed on the frontend. The `device_class` can be `null`.
+  description: Sets the [class of the device](/integrations/valve/#device_class), changing the device state and icon that is displayed on the frontend. The `device_class` can be `null`.
   required: false
   type: string
 enabled_by_default:
@@ -166,6 +170,10 @@ encoding:
   default: "utf-8"
 entity_category:
   description: "The [category](https://developers.home-assistant.io/docs/core/entity#generic-properties) of the entity."
+  required: false
+  type: string
+entity_picture:
+  description: "Picture URL for the entity."
   required: false
   type: string
 icon:
@@ -215,16 +223,20 @@ payload_open:
   type: string
   default: OPEN
 payload_stop:
-  description: The command payload that stops the valve. When not configured, the valve will not support the `valve.stop` service.
+  description: The command payload that stops the valve. When not configured, the valve will not support the `valve.stop` action.
   required: false
   type: string
+platform:
+  description: Must be `valve`. Only allowed and required in [MQTT auto discovery device messages](/integrations/mqtt/#device-discovery-payload).
+  required: true
+  type: string
 position_closed:
-  description: Number which represents closed position. The valve's position will be scaled to the(`position_closed`...`position_open`) range when a service is called and scaled back when a value is received.
+  description: Number which represents closed position. The valve's position will be scaled to the(`position_closed`...`position_open`) range when an action is performed and scaled back when a value is received.
   required: false
   type: integer
   default: 0
 position_open:
-  description: Number which represents open position. The valve's position will be scaled to (`position_closed`...`position_open`) range when a service is called and scaled back when a value is received.
+  description: Number which represents open position. The valve's position will be scaled to (`position_closed`...`position_open`) range when an is performed and scaled back when a value is received.
   required: false
   type: integer
   default: 100
@@ -268,7 +280,7 @@ state_topic:
   required: false
   type: string
 unique_id:
-  description: An ID that uniquely identifies this valve. If two valves have the same unique ID, Home Assistant will raise an exception.
+  description: An ID that uniquely identifies this valve. If two valves have the same unique ID, Home Assistant will raise an exception. Required when used with device-based discovery.
   required: false
   type: string
 value_template:

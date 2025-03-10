@@ -18,6 +18,7 @@ ha_domain: esphome
 ha_zeroconf: true
 ha_platforms:
   - alarm_control_panel
+  - assist_satellite
   - binary_sensor
   - button
   - camera
@@ -49,9 +50,9 @@ This integration allows [ESPHome](https://esphome.io) devices to connect directl
 
 {% include integrations/config_flow.md %}
 
-## Home Assistant service calls
+## Home Assistant actions
 
-ESPHome devices can make service calls to any [Home Assistant service](https://esphome.io/components/api.html#homeassistant-service-action). This functionality is not enabled by default for newly configured device, but can be turned on the options flow on a per device basis.
+ESPHome devices can perform actions to any [Home Assistant action](https://esphome.io/components/api.html#homeassistant-service-action). This functionality is not enabled by default for newly configured device, but can be turned on the options flow on a per device basis.
 
 {% include integrations/option_flow.md %}
 
@@ -94,3 +95,18 @@ sensor:
 ```
 
 The entity will be named `Temperature` and will default to having an entity_id of `sensor.temperature`.
+
+## Obtaining logs from the device
+
+1. To have the device send logs to Home Assistant, in the [options flow](#options), enable `Subscribe to logs from the device`. 
+   - They are logged under the `homeassistant.components.esphome` logger at the equivalent level.
+
+2. To adjust the logging level, there are two options:
+    - enable [debug logging](/docs/configuration/troubleshooting/#debug-logs-and-diagnostics),
+    - or use the [Developer Tools](/docs/tools/dev-tools/#actions-tab) to call the [`logger.set_level`](/integrations/logger/#action-set_level) action to specify the desired level:
+
+      ```yaml
+      action: logger.set_level
+      data:
+        homeassistant.components.esphome: debug
+      ```

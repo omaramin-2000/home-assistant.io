@@ -30,7 +30,7 @@ Recovery mode loads a minimum set of integrations to allow troubleshooting the c
 
 ### Resolution
 
-You need to identify the issue in the configuration files and fix it there. The issue could be caused by something as simple as an invalid YAML file.
+You need to identify the issue in the configuration files and fix it there. The issue could be caused by something as simple as an invalid {% term YAML %} file.
 
 - If you are running {% term "Home Assistant Operating System" %}, you can install an add-on such as Studio Code Server to edit the configuration file if needed.
 - If you are still logged in, you can [edit your configuration](/docs/configuration/#editing-configurationyaml).
@@ -53,7 +53,7 @@ Typically, updates are shown at the top of the **Settings** page. If you don't s
 
 ### Resolution
 
-1. On the **System** page, in the top-right corner, select the three dots menu and select **Check for updates**.
+1. On the **System** page, in the top-right corner, select the three dots {% icon "mdi:dots-vertical" %} menu and select **Check for updates**.
 2. Go to {% my updates title="**System** > **Updates**" %}.
     - Select the update notification.
-    - Select the cogwheel, then set **Visible** to active.
+    - Select the cogwheel {% icon "mdi:cog-outline" %}, then set **Visible** to active.

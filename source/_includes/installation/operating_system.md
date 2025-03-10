@@ -108,7 +108,7 @@ To write the HAOS image to the boot medium on your x86-64 hardware, there are 2 
    - This means you will lose all the data as well as the previously installed operating system.
    - Back up your data before carrying out this procedure.
 2. Create a *live operating system* on a USB flash drive:
-   - Follow the [Ubuntu instructions](https://ubuntu.com/tutorials/try-ubuntu-before-you-install) on writing an Ubuntu iso file onto a USB device.
+   - Follow the [Ubuntu Desktop instructions](https://ubuntu.com/tutorials/try-ubuntu-before-you-install) on writing an Ubuntu Desktop iso file onto a USB device.
 3. Insert the USB flash drive into the system on which you want to run Home Assistant.
    - Boot the live operating system.
    - You might need to adjust boot order or use F10 (might be a different F-key depending on the BIOS) to select the USB flash drive as boot device.
@@ -120,7 +120,7 @@ To write the HAOS image to the boot medium on your x86-64 hardware, there are 2 
 6. In Ubuntu, in the bottom left corner, select **Show Applications**.
 7. In the applications, search and open **Disks** and start restoring the HAOS image:
    1. In **Disks**, on the left side, select the internal disk device you want to install HAOS onto.
-   2. On top of the screen, select the three dots menu and select **Restore Disk Image...**.
+   2. On top of the screen, select the three dots {% icon "mdi:dots-vertical" %} menu and select **Restore Disk Image...**.
       ![Restore disk image: select three dots menu](/images/installation/ubuntu_restore_disk_image.png)
    3. Select the image you just downloaded.
       ![Restore disk image: select image](/images/installation/select_haos.png)
@@ -319,12 +319,12 @@ Minimum recommended assignments:
        - Make sure **EFI** is enabled. If EFI is not enabled, HAOS won't boot.
     4. Under **Hard Disk**, select **Use an existing virtual hard disk file**, select the unzipped VDI file from above.
     5. Then go to **Network** > **Adapter 1**. Choose **Bridged Adapter** and choose your network adapter.  
-      <iconify-icon inline icon="mdi:alert-outline"></iconify-icon> Please keep in mind that the bridged
+      {% icon "mdi:alert-outline" %} Please keep in mind that the bridged
       adapter only functions over a hardwired Ethernet connection.
       Using Wi-Fi on your VirtualBox host is unsupported.
     6. Then go to <b>Audio</b> and choose <b>Intel HD Audio</b> as audio controller.
 
-    <iconify-icon inline icon="mdi:alert-outline"></iconify-icon>  By default, VirtualBox does not
+    {% icon "mdi:alert-outline" %}  By default, VirtualBox does not
     free up unused disk space. To automatically shrink the vdi disk image the `discard` option must
     be enabled using your host machine's terminal:
 
@@ -374,7 +374,7 @@ Minimum recommended assignments:
     virt-install --name haos --description "Home Assistant OS" --os-variant=generic --ram=4096 --vcpus=2 --disk <PATH TO QCOW2 FILE>,bus=scsi --controller type=scsi,model=virtio-scsi --import --graphics none --boot uefi
     ```
 
-    <iconify-icon inline icon="mdi:alert-outline"></iconify-icon> If you have a USB
+    {% icon "mdi:alert-outline" %} If you have a USB
     dongle to attach, you need to add the option `--hostdev busID.deviceId`. You can
     discover these IDs via the `lsusb` command. As example, if `lsusb` output is:
 
@@ -462,7 +462,7 @@ Minimum recommended assignments:
 
 1. Start the virtual machine.
 2. Observe the boot process of the Home Assistant Operating System.
-3. Once completed, you will be able to reach Home Assistant on <a href="http://homeassistant.local:8123" target="_blank">homeassistant.local:8123</a>. If you are running an older Windows version or have a stricter network configuration, you might need to access Home Assistant at <a href="http://homeassistant:8123" target="_blank">homeassistant:8123</a> or `http://X.X.X.X:8123` (replace X.X.X.X with your {{site.installation.types[page.installation_type].board}}’s IP address).
+3. Once completed, you will be able to reach Home Assistant on <a href="http://homeassistant.local:8123" target="_blank">homeassistant.local:8123</a>. If you are running an older Windows version or have a stricter network configuration, you might need to access Home Assistant at <a href="http://homeassistant:8123" target="_blank">homeassistant:8123</a> or `http://X.X.X.X:8123` (replace X.X.X.X with your virtual machine’s IP address).
 
 {% endif %}
 
@@ -479,7 +479,7 @@ With the Home Assistant Operating System installed and accessible, you can conti
 
 {% endif %}
 
-[generic-x86-64]: {{release_url}}/{{site.data.version_data.hassos['ova']}}/haos_generic-x86-64-{{site.data.version_data.hassos['generic-x86-64']}}.img.xz
+[generic-x86-64]: {{release_url}}/{{site.data.version_data.hassos['generic-x86-64']}}/haos_generic-x86-64-{{site.data.version_data.hassos['generic-x86-64']}}.img.xz
 [vmdk]: {{release_url}}/{{site.data.version_data.hassos['ova']}}/haos_ova-{{site.data.version_data.hassos['ova']}}.vmdk.zip
 [vhdx]: {{release_url}}/{{site.data.version_data.hassos['ova']}}/haos_ova-{{site.data.version_data.hassos['ova']}}.vhdx.zip
 [vdi]: {{release_url}}/{{site.data.version_data.hassos['ova']}}/haos_ova-{{site.data.version_data.hassos['ova']}}.vdi.zip

@@ -12,6 +12,7 @@ ha_integration_type: integration
 related:
   - docs: /docs/configuration/
     title: Configuration file
+ha_quality_scale: legacy
 ---
 
 The `spaceapi` {% term integration %} allow Hackerspaces to expose information to web apps or any other application with the [SpaceAPI](https://spaceapi.io/).
@@ -289,7 +290,7 @@ spaceapi:
   issue_report_channels:
     - email
   state:
-    entity_id: binary_sensor.front_door"
+    entity_id: "binary_sensor.front_door"
     icon_open: https://eastermundigen.ch/open.png
     icon_closed: https://eastermundigen.ch/close.png
   sensors:

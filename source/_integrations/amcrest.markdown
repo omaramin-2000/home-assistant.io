@@ -20,6 +20,7 @@ ha_integration_type: integration
 related:
   - docs: /docs/configuration/
     title: Configuration file
+ha_quality_scale: legacy
 ---
 
 The `amcrest` camera platform allows you to integrate your [Amcrest](https://amcrest.com/) or Dahua IP camera or doorbell in Home Assistant.
@@ -192,11 +193,11 @@ Once loaded, the Amcrest integration will generate (Home Assistant) {% term even
 
 The event code is sent by Amcrest or Dahua devices in the payload as a "Code" member. To ease event matching in automations, this code is replicated in a more top-level `event` member in `data`.
 
-## Services
+## Actions
 
-Once loaded, the `amcrest` integration will expose {% term services %} that can be called to perform various actions. The `entity_id` service attribute can specify one or more specific cameras, or `all` can be used to specify all configured Amcrest cameras.
+Once loaded, the `amcrest` integration will expose {% term actions %} that can be called to perform various actions. The `entity_id` action attribute can specify one or more specific cameras, or `all` can be used to specify all configured Amcrest cameras.
 
-Available {% term services %}:
+Available {% term actions %}:
 `enable_audio`, `disable_audio`,
 `enable_motion_recording`, `disable_motion_recording`,
 `enable_recording`, `disable_recording`,
@@ -204,61 +205,61 @@ Available {% term services %}:
 `start_tour`, `stop_tour`, and
 `ptz_control`
 
-### Service `enable_audio`/`disable_audio`
+### Action `enable_audio`/`disable_audio`
 
-These {% term services %} enable or disable the camera's audio stream.
+These {% term actions %} enable or disable the camera's audio stream.
 
-| Service data attribute | Optional | Description                                                                                                                  |
+| Data attribute | Optional | Description                                                                                                                  |
 | ---------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `entity_id`            | no       | The entity ID of the camera to control. May be a list of multiple entity IDs. To target all cameras, set entity ID to `all`. |
 
-### Service `enable_motion_recording`/`disable_motion_recording`
+### Action `enable_motion_recording`/`disable_motion_recording`
 
-These {% term services %} enable or disable the camera to record a clip to its configured storage location when motion is detected.
+These {% term actions %} enable or disable the camera to record a clip to its configured storage location when motion is detected.
 
-| Service data attribute | Optional | Description                                                                                                                  |
+| Data attribute | Optional | Description                                                                                                                  |
 | ---------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `entity_id`            | no       | The entity ID of the camera to control. May be a list of multiple entity IDs. To target all cameras, set entity ID to `all`. |
 
-### Service `enable_recording`/`disable_recording`
+### Action `enable_recording`/`disable_recording`
 
-These services enable or disable the camera to continuously record to its configured storage location.
+These actions enable or disable the camera to continuously record to its configured storage location.
 
-| Service data attribute | Optional | Description                                                                                                                  |
+| Data attribute | Optional | Description                                                                                                                  |
 | ---------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `entity_id`            | no       | The entity ID of the camera to control. May be a list of multiple entity IDs. To target all cameras, set entity ID to `all`. |
 
-### Service `goto_preset`
+### Action `goto_preset`
 
-This service will cause the camera to move to one of the <abbr title="pan, tilt, and zoom">PTZ</abbr> locations configured within the camera.
+This action will cause the camera to move to one of the <abbr title="pan, tilt, and zoom">PTZ</abbr> locations configured within the camera.
 
-| Service data attribute | Optional | Description                                                                                                                  |
+| Data attribute | Optional | Description                                                                                                                  |
 | ---------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `entity_id`            | no       | The entity ID of the camera to control. May be a list of multiple entity IDs. To target all cameras, set entity ID to `all`. |
 | `preset`               | no       | Preset number, starting from 1.                                                                                              |
 
-### Service `set_color_bw`
+### Action `set_color_bw`
 
-This service will set the color mode of the camera.
+This action will set the color mode of the camera.
 
-| Service data attribute | Optional | Description                                                                                                                  |
+| Data attribute | Optional | Description                                                                                                                  |
 | ---------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `entity_id`            | no       | The entity ID of the camera to control. May be a list of multiple entity IDs. To target all cameras, set entity ID to `all`. |
 | `color_bw`             | no       | One of `auto`, `bw` or `color`.                                                                                              |
 
-### Service `start_tour`/`stop_tour`
+### Action `start_tour`/`stop_tour`
 
-These services start or stop the camera's <abbr title="pan, tilt, and zoom">PTZ</abbr> tour function.
+These actions start or stop the camera's <abbr title="pan, tilt, and zoom">PTZ</abbr> tour function.
 
-| Service data attribute | Optional | Description                                                                                                                  |
+| Data attribute | Optional | Description                                                                                                                  |
 | ---------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `entity_id`            | no       | The entity ID of the camera to control. May be a list of multiple entity IDs. To target all cameras, set entity ID to `all`. |
 
-### Service `ptz_control`
+### Action `ptz_control`
 
 If your Amcrest or Dahua camera supports <abbr title="pan, tilt, and zoom">PTZ</abbr>, you will be able to pan, tilt or zoom your camera.  
 
-| Service data attribute | Optional | Description                                                                                                                                        |
+| Data attribute | Optional | Description                                                                                                                                        |
 | ---------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `entity_id`            | no       | The entity ID of the camera to control. May be a list of multiple entity IDs. To target all cameras, set entity ID to `all`.                       |
 | `movement`             | no       | Direction of the movement. Allowed values: `zoom_in`, `zoom_out`, `up`, `down`, `left`, `right`, `right_up`, `right_down`, `left_up`,  `left_down` |
@@ -291,8 +292,8 @@ elements:
       right: 25px
       bottom: 50px
     tap_action:
-      action: call-service
-      service: amcrest.ptz_control
+      action: perform-action
+      perform_action: amcrest.ptz_control
       service_data:
         entity_id: camera.lakehouse
         movement: up
@@ -303,8 +304,8 @@ elements:
       right: 25px
       bottom: 0px
     tap_action:
-      action: call-service
-      service: amcrest.ptz_control
+      action: perform-action
+      perform_action: amcrest.ptz_control
       service_data:
         entity_id: camera.lakehouse
         movement: down
@@ -315,8 +316,8 @@ elements:
       right: 50px
       bottom: 25px
     tap_action:
-      action: call-service
-      service: amcrest.ptz_control
+      action: perform-action
+      perform_action: amcrest.ptz_control
       service_data:
         entity_id: camera.lakehouse
         movement: left
@@ -327,8 +328,8 @@ elements:
       right: 0px
       bottom: 25px
     tap_action:
-      action: call-service
-      service: amcrest.ptz_control
+      action: perform-action
+      perform_action: amcrest.ptz_control
       service_data:
         entity_id: camera.lakehouse
         movement: right
@@ -339,8 +340,8 @@ elements:
       right: 50px
       bottom: 50px
     tap_action:
-      action: call-service
-      service: amcrest.ptz_control
+      action: perform-action
+      perform_action: amcrest.ptz_control
       service_data:
         entity_id: camera.lakehouse
         movement: left_up
@@ -351,8 +352,8 @@ elements:
       right: 0px
       bottom: 50px
     tap_action:
-      action: call-service
-      service: amcrest.ptz_control
+      action: perform-action
+      perform_action: amcrest.ptz_control
       service_data:
         entity_id: camera.lakehouse
         movement: right_up
@@ -363,8 +364,8 @@ elements:
       right: 50px
       bottom: 0px
     tap_action:
-      action: call-service
-      service: amcrest.ptz_control
+      action: perform-action
+      perform_action: amcrest.ptz_control
       service_data:
         entity_id: camera.lakehouse
         movement: left_down
@@ -375,8 +376,8 @@ elements:
       right: 0px
       bottom: 0px
     tap_action:
-      action: call-service
-      service: amcrest.ptz_control
+      action: perform-action
+      perform_action: amcrest.ptz_control
       service_data:
         entity_id: camera.lakehouse
         movement: right_down
@@ -387,14 +388,14 @@ elements:
       bottom: 25px
       right: 25px
     tap_action:
-      action: call-service
-      service: amcrest.ptz_control
+      action: perform-action
+      perform_action: amcrest.ptz_control
       service_data:
         entity_id: camera.lakehouse
         movement: zoom_in
     hold_action:
-      action: call-service
-      service: amcrest.ptz_control
+      action: perform-action
+      perform_action: amcrest.ptz_control
       data:
         entity_id: camera.lakehouse
         movement: zoom_out
@@ -434,16 +435,16 @@ Using this {% term trigger %} in an {% term automation %} will allow you to dete
 
 ```yaml
 # Example automations.yaml entry
-alias: Doorbell Pressed
+alias: "Doorbell Pressed"
 description: "Trigger when Amcrest Button Press Event Fires"
-trigger:
-  - platform: event
+triggers:
+  - trigger: event
     event_type: amcrest
     event_data:
       event: "CallNoAnswered"
       payload:
         action: "Start"
-action:
+actions:
   - type: flash
     entity_id: light.living_room
     domain: light
