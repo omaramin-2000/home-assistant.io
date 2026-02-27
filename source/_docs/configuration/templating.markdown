@@ -24,7 +24,7 @@ Templating in Home Assistant is powered by the [Jinja2](https://palletsprojects.
 
 We will not go over the basics of the syntax, as Jinja2 does a great job of this in their [templates documentation](https://jinja.palletsprojects.com/en/latest/templates/).
 
-The frontend has a {% my developer_template title="template editor tool" %} to help develop and debug templates. Navigate to {% my developer_template title="Developer Tools > Template" %}, create your template in the _Template editor_ and check the results on the right.
+The frontend has a template editor tool to help develop and debug templates. Go to {% my developer_template title="**Settings** > **Developer tools** > **Template**" %}, create your template in the **Template editor** and check the results on the right.
 
 Templates can get big pretty fast. To keep a clear overview, consider using YAML multiline strings to define your templates:
 
@@ -52,8 +52,8 @@ There are a few very important rules to remember when adding templates to YAML:
 
 1. You **must** surround single-line templates with double quotes (`"`) or single quotes (`'`).
 2. It is advised that you prepare for undefined variables by using `if ... is not none` or the [`default` filter](https://jinja.palletsprojects.com/en/latest/templates/#jinja-filters.default), or both.
-3. It is advised that when comparing numbers, you convert the number(s) to a [`float`](https://jinja.palletsprojects.com/en/latest/templates/#float) or an [`int`](https://jinja.palletsprojects.com/en/latest/templates/#int) by using the respective [filter](https://jinja.palletsprojects.com/en/latest/templates/#list-of-builtin-filters).
-4. While the [`float`](https://jinja.palletsprojects.com/en/latest/templates/#float) and [`int`](https://jinja.palletsprojects.com/en/latest/templates/#int) filters do allow a default fallback value if the conversion is unsuccessful, they do not provide the ability to catch undefined variables.
+3. It is advised that when comparing numbers, you convert the number(s) to a [`float`](https://jinja.palletsprojects.com/en/latest/templates/#jinja-filters.float) or an [`int`](https://jinja.palletsprojects.com/en/latest/templates/#jinja-filters.int) by using the respective [filter](https://jinja.palletsprojects.com/en/latest/templates/#list-of-builtin-filters).
+4. While the [`float`](https://jinja.palletsprojects.com/en/latest/templates/#jinja-filters.float) and [`int`](https://jinja.palletsprojects.com/en/latest/templates/#jinja-filters.int) filters do allow a default fallback value if the conversion is unsuccessful, they do not provide the ability to catch undefined variables.
 
 Remembering these simple rules will help save you from many headaches and endless hours of frustration when using automation templates.
 
@@ -63,7 +63,8 @@ Jinja supports a set of language extensions that add new functionality to the la
 To improve the experience of writing Jinja templates, we have enabled the following
 extensions:
 
-- [Loop Controls](https://jinja.palletsprojects.com/en/3.0.x/extensions/#loop-controls) (`break` and `continue`)
+- [Loop Controls](https://jinja.palletsprojects.com/en/stable/extensions/#loop-controls) (`break` and `continue`)
+- [Expression Statement](https://jinja.palletsprojects.com/en/stable/extensions/#expression-statement) (`do`)
 
 ### Reusing templates
 
@@ -79,7 +80,7 @@ For example, you might define a macro in a template in `config/custom_templates/
 
 {% raw %}
 
-```text
+```jinja
 {% macro format_entity(entity_id) %}
 {{ state_attr(entity_id, 'friendly_name') }} - {{ states(entity_id) }}
 {% endmacro %}
@@ -91,16 +92,35 @@ In your automations, you could then reuse this macro by importing it:
 
 {% raw %}
 
-```text
+```jinja
 {% from 'formatter.jinja' import format_entity %}
 {{ format_entity('sensor.temperature') }}
 ```
 
 {% endraw %}
 
+Home Assistant also allows you to write macros with non-string return values by
+taking a named argument called `returns` and calling it with a return value.  Once created,
+pass the macro into the `as_function` filter to use the returned value:
+
+{% raw %}
+
+```jinja
+{%- macro macro_is_switch(entity_name, returns) -%}
+  {%- do returns(entity_name.startswith('switch.')) -%}
+{%- endmacro -%}
+{%- set is_switch = macro_is_switch | as_function -%}
+{{ "It's a switch!" if is_switch("switch.my_switch") else "Not a switch!" }}
+```
+
+{% endraw %}
+
+In this way, you can export utility functions that return scalar or complex values rather than
+just macros that render to strings.
+
 ## Home Assistant template extensions
 
-Extensions allow templates to access all of the Home Assistant specific states and adds other convenience functions and filters.
+Extensions allow templates to access all the Home Assistant specific states and adds other convenience functions and filters.
 
 ### Limited templates
 
@@ -126,7 +146,7 @@ Not supported in [limited templates](#limited-templates).
 - `has_value('sensor.my_sensor')` will test if the given entity is not unknown or unavailable. Can be used as a filter or a test.
 
 {% warning %}
-Avoid using `states.sensor.temperature.state`, instead use `states('sensor.temperature')`. It is strongly advised to use the `states()`, `is_state()`, `state_attr()` and `is_state_attr()` as much as possible, to avoid errors and error message when the entity isn't ready yet (e.g., during Home Assistant startup).
+Avoid using `states.sensor.temperature.state`, instead use `states('sensor.temperature')`. It is strongly advised to use the `states()`, `is_state()`, `state_attr()` and `is_state_attr()` as much as possible, to avoid errors and error message when the entity isn't ready yet (such as during Home Assistant startup).
 {% endwarning %}
 
 #### States examples
@@ -427,6 +447,7 @@ The same thing can also be expressed as a test:
 - `device_attr(device_or_entity_id, attr_name)` returns the value of `attr_name` for the given device or entity ID. Can also be used as a filter. Not supported in [limited templates](#limited-templates).
 - `is_device_attr(device_or_entity_id, attr_name, attr_value)` returns whether the value of `attr_name` for the given device or entity ID matches `attr_value`. Can also be used as a test. Not supported in [limited templates](#limited-templates).
 - `device_id(entity_id)` returns the device ID for a given entity ID or device name. Can also be used as a filter.
+- `device_name(lookup_value)` returns the device name for a given device ID or entity ID. Can also be used as a filter.
 
 #### Devices examples
 
@@ -444,12 +465,17 @@ The same thing can also be expressed as a test:
 {{ device_id('sensor.sony') }}  # deadbeefdeadbeefdeadbeefdeadbeef
 ```
 
+```text
+{{ device_name('deadbeefdeadbeefdeadbeefdeadbeef') }}  # Sony speaker
+{{ device_name('sensor.sony') }}  # Sony speaker
+```
+
 {% endraw %}
 
 ### Config entries
 
 - `config_entry_id(entity_id)` returns the config entry ID for a given entity ID. Can also be used as a filter.
-- `config_entry_attr(config_entry_id, attr)` returns the value of `attr` for the config entry of the given entity ID. Can also be used as a filter. The following attributes are allowed: `domain`, `title`, `state`, `source`, `disabled_by`. Not supported in [limited templates](#limited-templates).
+- `config_entry_attr(config_entry_id, attr)` returns the value of `attr` for the config entry of the given entity ID. Can also be used as a filter. The following attributes are allowed: `domain`, `title`, `state`, `source`, `disabled_by`, `pref_disable_polling`. Not supported in [limited templates](#limited-templates).
 
 #### Config entries examples
 
@@ -470,9 +496,10 @@ The same thing can also be expressed as a test:
 ### Floors
 
 - `floors()` returns the full list of floor IDs.
-- `floor_id(lookup_value)` returns the floor ID for a given device ID, entity ID, area ID, or area name. Can also be used as a filter.
+- `floor_id(lookup_value)` returns the floor ID for a given floor name or alias, area name or alias, entity ID or device ID. Can also be used as a filter.
 - `floor_name(lookup_value)` returns the floor name for a given device ID, entity ID, area ID, or floor ID. Can also be used as a filter.
 - `floor_areas(floor_name_or_id)` returns the list of area IDs tied to a given floor ID or name. Can also be used as a filter.
+- `floor_entities(floor_name_or_id)` returns the list of entity IDs tied to a given floor ID or name. Can also be used as a filter.
 
 #### Floors examples
 
@@ -484,6 +511,10 @@ The same thing can also be expressed as a test:
 
 ```text
 {{ floor_id('First floor') }}  # 'first_floor'
+```
+
+```text
+{{ floor_id('First floor alias') }}  # 'first_floor'
 ```
 
 ```text
@@ -515,7 +546,7 @@ The same thing can also be expressed as a test:
 ### Areas
 
 - `areas()` returns the full list of area IDs
-- `area_id(lookup_value)` returns the area ID for a given device ID, entity ID, or area name. Can also be used as a filter.
+- `area_id(lookup_value)` returns the area ID for a given area name or alias, entity ID or device ID. Can also be used as a filter.
 - `area_name(lookup_value)` returns the area name for a given device ID, entity ID, or area ID. Can also be used as a filter.
 - `area_entities(area_name_or_id)` returns the list of entity IDs tied to a given area ID or name. Can also be used as a filter.
 - `area_devices(area_name_or_id)` returns the list of device IDs tied to a given area ID or name. Can also be used as a filter.
@@ -530,6 +561,10 @@ The same thing can also be expressed as a test:
 
 ```text
 {{ area_id('Living Room') }}  # 'deadbeefdeadbeefdeadbeefdeadbeef'
+```
+
+```text
+{{ area_id('Living Room Alias') }}  # 'deadbeefdeadbeefdeadbeefdeadbeef'
 ```
 
 ```text
@@ -588,6 +623,7 @@ If there is more than one entry with the same title, the entities for all the ma
 - `labels()` returns the full list of label IDs, or those for a given area ID, device ID, or entity ID.
 - `label_id(lookup_value)` returns the label ID for a given label name.
 - `label_name(lookup_value)` returns the label name for a given label ID.
+- `label_description(lookup_value)` returns the label description for a given label ID.
 - `label_areas(label_name_or_id)` returns the list of area IDs tied to a given label ID or name.
 - `label_devices(label_name_or_id)` returns the list of device IDs tied to a given label ID or name.
 - `label_entities(label_name_or_id)` returns the list of entity IDs tied to a given label ID or name.
@@ -713,7 +749,7 @@ Examples using `iif`:
 {% warning %}
 The immediate if filter does not short-circuit like you might expect with a typical conditional statement. The `if_true`, `if_false` and `if_none` expressions will all be evaluated and the filter will simply return one of the resulting values. This means you cannot use this filter to prevent executing an expression which would result in an error.
 
-For example, if you wanted to select a field from `trigger` in an automation based on the platform you might go to make this template: `trigger.platform == 'event' | iif(trigger.event.data.message, trigger.to_state.state)`. This won't work because both expressions will be evaluated and one will fail since the field doesn't exist. Instead you have to do this `trigger.event.data.message if trigger.platform == 'event' else trigger.to_state.state`. This form of the expression short-circuits so if the platform is `event` the expression `trigger.to_state.state` will never be evaluated and won't cause an error.
+For example, if you wanted to select a field from `trigger` in an automation based on the platform you might go to make this template: `trigger.platform == 'event' | iif(trigger.event.data.message, trigger.to_state.state)`. This won't work because both expressions will be evaluated and one will fail since the field doesn't exist. Instead, you have to do this `trigger.event.data.message if trigger.platform == 'event' else trigger.to_state.state`. This form of the expression short-circuits so if the platform is `event` the expression `trigger.to_state.state` will never be evaluated and won't cause an error.
 {% endwarning%}
 
 ### Time
@@ -726,7 +762,7 @@ For example, if you wanted to select a field from `trigger` in an automation bas
 - `utcnow()` returns a datetime object of the current time in the UTC timezone.
   - For specific values: `utcnow().second`, `utcnow().minute`, `utcnow().hour`, `utcnow().day`, `utcnow().month`, `utcnow().year`, `utcnow().weekday()` and `utcnow().isoweekday()`.
   - Using `utcnow()` will cause templates to be refreshed at the start of every new minute.
-- `today_at(value)` converts a string containing a military time format to a datetime object with today's date in your time zone. Defaults to midnight (`00:00`).
+- `today_at(value)` converts a string containing a 24-hour time format to a datetime object with today's date in your time zone. Defaults to midnight (`00:00`).
 
   - Using `today_at()` will cause templates to be refreshed at the start of every new minute.
 
@@ -739,10 +775,12 @@ For example, if you wanted to select a field from `trigger` in an automation bas
 
   {% endraw %}
 
-- `as_datetime(value, default)` converts a string containing a timestamp, or valid UNIX timestamp, to a datetime object. If that fails, it returns the `default` value or, if omitted, raises an error. When the input is already a datetime object it will be returned as is. in case the input is a datetime.date object, midnight will be added as time. This function can also be used as a filter.
+- `as_datetime(value, default)` converts a string containing a timestamp or a valid UNIX timestamp to a datetime object. If conversion fails, the function returns the `default` value. If no `default` is provided and the input is a string that cannot be converted to a datetime, it returns `None`. For other invalid inputs (such as a list, dictionary, or a numeric value too large to convert), it raises an error when no `default` is supplied. In case the input is already a datetime object, it is returned unchanged. If the input is a `datetime.date` object, midnight is added as the time. This function can also be used as a filter.
 - `as_timestamp(value, default)` converts a datetime object or string to UNIX timestamp. If that fails, returns the `default` value, or if omitted raises an error. This function can also be used as a filter.
 - `as_local()` converts a datetime object to local time. This function can also be used as a filter.
 - `strptime(string, format, default)` parses a string based on a [format](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior) and returns a datetime object. If that fails, it returns the `default` value or, if omitted, raises an error.
+- `relative_time` converts a datetime object to its human-friendly "age" string. The age can be in seconds, minutes, hours, days, months, or years (but only the biggest unit is considered. For example, if it's 2 days and 3 hours, "2 days" will be returned). Note that it only works for dates _in the past_.
+  - Using `relative_time()` will cause templates to be refreshed at the start of every new minute.
 - `time_since(datetime, precision)` converts a datetime object into its human-readable time string. The time string can be in seconds, minutes, hours, days, months, and years. `precision` takes an integer (full number) and indicates the number of units returned.  The last unit is rounded. For example: `precision = 1` could return "2 years" while `precision = 2` could return "1 year 11 months". This function can also be used as a filter.
 If the datetime is in the future, returns 0 seconds.
 A precision of 0 returns all available units, default is 1.
@@ -760,7 +798,7 @@ A precision of 0 returns all available units, default is 1.
 
   {% endraw %}
 
-- `as_timedelta(string)` converts a string to a timedelta object, which represents a duration (an amount of time between two datetimes). Expects data in the format `DD HH:MM:SS.uuuuuu`, `DD HH:MM:SS,uuuuuu`, or as specified by ISO 8601 (e.g. `P4DT1H15M20S` which is equivalent to `4 1:15:20`) or PostgreSQL’s day-time interval format (e.g. `3 days 04:05:06`). This function can also be used as a filter.
+- `as_timedelta(string)` converts a string to a timedelta object, which represents a duration (an amount of time between two datetimes). Expects data in the format `DD HH:MM:SS.uuuuuu`, `DD HH:MM:SS,uuuuuu`, or as specified by ISO 8601 (for example, `P4DT1H15M20S` which is equivalent to `4 1:15:20`) or PostgreSQL’s day-time interval format (such as `3 days 04:05:06`). This function can also be used as a filter.
 
   {% raw %}
 
@@ -773,14 +811,14 @@ A precision of 0 returns all available units, default is 1.
 
 - Filter `timestamp_local(default)` converts a UNIX timestamp to the ISO format string representation as date/time in your local timezone. If that fails, returns the `default` value, or if omitted raises an error. If a custom string format is needed in the string, use `timestamp_custom` instead.
 - Filter `timestamp_utc(default)` converts a UNIX timestamp to the ISO format string representation representation as date/time in UTC timezone. If that fails, returns the `default` value, or if omitted raises an error. If a custom string format is needed in the string, use `timestamp_custom` instead.
-- Filter `timestamp_custom(format_string, local=True, default)` converts an UNIX timestamp to its string representation based on a custom format, the use of a local timezone is the default. If that fails, returns the `default` value, or if omitted raises an error. Supports the standard [Python time formatting options](https://docs.python.org/3/library/time.html#time.strftime).
+- Filter `timestamp_custom(format_string, local=True, default)` converts a UNIX timestamp to its string representation based on a custom format, the use of a local timezone is the default. If that fails, returns the `default` value, or if omitted raises an error. Supports the standard [Python time formatting options](https://docs.python.org/3/library/time.html#time.strftime).
 
 {% tip %}
 [UNIX timestamp](https://en.wikipedia.org/wiki/Unix_time) is the number of seconds that have elapsed since 00:00:00 UTC on 1 January 1970. Therefore, if used as a function's argument, it can be substituted with a numeric value (`int` or `float`).
 {% endtip %}
 
 {% important %}
-If your template is returning a timestamp that should be displayed in the frontend (e.g., as a sensor entity with `device_class: timestamp`), you have to ensure that it is the ISO 8601 format (meaning it has the "T" separator between the date and time portion). Otherwise, frontend rendering on macOS and iOS devices will show an error. The following value template would result in such an error:
+If your template is returning a timestamp that should be displayed in the frontend (such as a sensor entity with `device_class: timestamp`), you have to ensure that it is the ISO 8601 format (meaning it has the "T" separator between the date and time portion). Otherwise, frontend rendering on macOS and iOS devices will show an error. The following value template would result in such an error:
 
 {% raw %}
 
@@ -865,6 +903,29 @@ The temperature is 25°C
 
 {% endraw %}
 
+`from_json(default)` function will attempt to convert the input to `json`. If that fails, returns the `default` value, or if omitted raises an error.
+
+#### Template
+
+{% raw %}
+
+```text
+{% set result = 'not json'|from_json('not json') %}
+The value is {{ result }}
+```
+
+{% endraw %}
+
+#### Output
+
+{% raw %}
+
+```text
+The value is not json
+```
+
+{% endraw %}
+
 ### Is defined
 
 Sometimes a template should only return if a value or object is defined, if not, the supplied default value should be returned. This can be useful to validate a JSON payload.
@@ -884,7 +945,7 @@ This will throw an error `UndefinedError: 'value_json' is undefined` if the JSON
 
 ### Version
 
-- `version()` Returns a [AwesomeVersion object](https://github.com/ludeeus/awesomeversion) for the value given inside the brackets.
+- `version()` Returns an [AwesomeVersion object](https://github.com/ludeeus/awesomeversion) for the value given inside the brackets.
   - This is also available as a filter (`| version`).
 
 Examples:
@@ -1043,23 +1104,32 @@ The numeric functions and filters raise an error if the input is not a valid num
 - `bool(value, default)` function converts the value to either `true` or `false`.
   The following values are considered to be `true`: boolean `true`, non-zero `int`s and `float`s, and the strings `"true"`, `"yes"`, `"on"`, `"enable"`, and `"1"` (case-insensitive). `false` is returned for the opposite values: boolean `false`, integer or floating-point `0`, and the strings `"false"`, `"no"`, `"off"`, `"disable"`, and `"0"` (also case-insensitive).
   If the value is not listed here, the function returns the `default` value, or if omitted raises an error.
-  This function is intended to be used on states of [binary sensors](/integrations/binary_sensor/), [switches](/integrations/switch/), or similar entities, so its behavior is different from Python's built-in `bool` conversion, which would consider e.g. `"on"`, `"off"`, and `"unknown"` all to be `true`, but `""` to be `false`; if that is desired, use `not not value` or a similar construct instead.
+  This function is intended to be used on states of [binary sensors](/integrations/binary_sensor/), [switches](/integrations/switch/), or similar entities, so its behavior is different from Python's built-in `bool` conversion, which would consider values like `"on"`, `"off"`, and `"unknown"` all to be `true`, but `""` to be `false`; if that is desired, use `not not value` or a similar construct instead.
   Like `float` and `int`, `bool` has a filter form. Using `none` as the default value is particularly useful in combination with the [immediate if filter](#immediate-if-iif): it can handle all three possible cases in a single line.
 
 - `log(value, base, default)` will take the logarithm of the input. When the base is omitted, it defaults to `e` - the natural logarithm. If `value` or `base` can't be converted to a `float`, returns the `default` value, or if omitted raises an error. Can also be used as a filter.
-- `sin(value, default)` will return the sine of the input. If `value` can't be converted to a `float`, returns the `default` value, or if omitted raises an error. Can be used as a filter.
-- `cos(value, default)` will return the cosine of the input. If `value` can't be converted to a `float`, returns the `default` value, or if omitted raises an error. Can be used as a filter.
-- `tan(value, default)` will return the tangent of the input. If `value` can't be converted to a `float`, returns the `default` value, or if omitted raises an error. Can be used as a filter.
-- `asin(value, default)` will return the arcus sine of the input. If `value` can't be converted to a `float`, returns the `default` value, or if omitted raises an error. Can be used as a filter.
-- `acos(value, default)` will return the arcus cosine of the input. If `value` can't be converted to a `float`, returns the `default` value, or if omitted raises an error. Can be used as a filter.
-- `atan(value, default)` will return the arcus tangent of the input. If `value` can't be converted to a `float`, returns the `default` value, or if omitted raises an error. Can be used as a filter.
-- `atan2(y, x, default)` will return the four quadrant arcus tangent of y / x. If `y` or `x` can't be converted to a `float`, returns the `default` value, or if omitted raises an error. Can be used as a filter.
+- `sin(value, default)` will return the sine of the input. The input value is in radians. If `value` can't be converted to a `float`, returns the `default` value, or if omitted raises an error. Can be used as a filter.
+- `cos(value, default)` will return the cosine of the input. The input value is in radians. If `value` can't be converted to a `float`, returns the `default` value, or if omitted raises an error. Can be used as a filter.
+- `tan(value, default)` will return the tangent of the input. The input value is in radians. If `value` can't be converted to a `float`, returns the `default` value, or if omitted raises an error. Can be used as a filter.
+- `asin(value, default)` will return the arcus sine of the input. The return value is in radians. If `value` can't be converted to a `float`, returns the `default` value, or if omitted raises an error. Can be used as a filter.
+- `acos(value, default)` will return the arcus cosine of the input. The return value is in radians. If `value` can't be converted to a `float`, returns the `default` value, or if omitted raises an error. Can be used as a filter.
+- `atan(value, default)` will return the arcus tangent of the input. The return value is in radians. If `value` can't be converted to a `float`, returns the `default` value, or if omitted raises an error. Can be used as a filter.
+- `atan2(y, x, default)` will return the four quadrant arcus tangent of y / x. The return value is in radians. If `y` or `x` can't be converted to a `float`, returns the `default` value, or if omitted raises an error. Can be used as a filter.
 - `sqrt(value, default)` will return the square root of the input. If `value` can't be converted to a `float`, returns the `default` value, or if omitted raises an error. Can be used as a filter.
 - `max([x, y, ...])` will obtain the largest item in a sequence. Uses the same parameters as the built-in [max](https://jinja.palletsprojects.com/en/latest/templates/#jinja-filters.max) filter.
 - `min([x, y, ...])` will obtain the smallest item in a sequence. Uses the same parameters as the built-in [min](https://jinja.palletsprojects.com/en/latest/templates/#jinja-filters.min) filter.
 - `average([x, y, ...], default)` will return the average value of the sequence. If list is empty or contains non-numeric value, returns the `default` value, or if omitted raises an error. Can be used as a filter.
 - `median([x, y, ...], default)` will return the median value of the sequence. If list is empty or contains non-numeric value, returns the `default` value, or if omitted raises an error. Can be used as a filter.
 - `statistical_mode([x, y, ...], default)` will return the statistical mode value (most frequent occurrence) of the sequence. If the list is empty, it returns the `default` value, or if omitted raises an error. It can be used as a filter.
+- `clamp(v, min, max)` limits the value `v` to be between `min` and `max`, [clamping at the edges](https://en.wikipedia.org/wiki/Clamp_(function)). If any of the arguments cannot be converted to a float, an error is raised. Can be used as a filter.
+- `wrap(v, min, max)` limits the value to be between min and max, wrapping the value at the edges. In mathematical terms, this is [modular arithmetic](https://en.wikipedia.org/wiki/Modular_arithmetic), sometimes called "clock face math". If `v`, `min`, or `max` cannot be converted to numbers, an error is raised. Can be used as a filter.
+- `remap(v, in_min, in_max, out_min, out_max, *, [steps], [edges])` remaps a value `v` from the range `in_min`..`in_max` to the range `out_min`..`out_max`.
+  If any of the values `v`, `in_min`, `in_max`, `out_min`, `out_max` cannot be converted to numbers, an error is raised. Can be used as a filter.
+  - You can optionally set the `edges` parameter to control how out-of-bounds input values are handled:
+    - `edges='clamp'` (the default) will clamp the output to the min/max output range.
+    - `edges='wrap'` will wrap the input value around the input range before remapping.
+    - `edges='mirror'` will bounce the input value back and forth within the input range before remapping.
+  - You can optionally set the `steps` parameter to a positive integer to quantize the output to a number of discrete steps.
 - `e` mathematical constant, approximately 2.71828.
 - `pi` mathematical constant, approximately 3.14159.
 - `tau` mathematical constant, approximately 6.28318.
@@ -1078,10 +1148,10 @@ The numeric functions and filters raise an error if the input is not a valid num
 
 In addition to strings and numbers, Python (and Jinja) supports lists, sets, and dictionaries. To help you with testing these types, you can use the following tests:
 
-- `x is list` will return whether `x` is a `list` or not (e.g. `[1, 2] is list` will return `True`).
-- `x is set` will return whether `x` is a `set` or not (e.g. `{1, 2} is set` will return `True`).
-- `x is tuple` will return whether `x` is a `tuple` or not (e.g. `(1, 2) is tuple` will return `True`).
-- `x is datetime` will return whether `x` is a `datetime` or not (e.g. `datetime(2020, 1, 1, 0, 0, 0) is datetime` will return `True`).
+- `x is list` will return whether `x` is a `list` or not (for example, `[1, 2] is list` will return `True`).
+- `x is set` will return whether `x` is a `set` or not (for example, `{1, 2} is set` will return `True`).
+- `x is tuple` will return whether `x` is a `tuple` or not (for example, `(1, 2) is tuple` will return `True`).
+- `x is datetime` will return whether `x` is a `datetime` or not (for example, `datetime(2020, 1, 1, 0, 0, 0) is datetime` will return `True`).
 - `x is string_like` will return whether `x` is a string, bytes, or bytearray object.
 
 Note that, in Home Assistant, Jinja has built-in tests for `boolean` (`True`/`False`), `callable` (any function), `float` (a number with a decimal), `integer` (a number without a decimal), `iterable` (a value that can be iterated over such as a `list`, `set`, `string`, or generator), `mapping` (mainly `dict` but also supports other dictionary like types), `number` (`float` or `int`), `sequence` (a value that can be iterated over and indexed such as `list` and `string`), and `string`.
@@ -1090,8 +1160,8 @@ Note that, in Home Assistant, Jinja has built-in tests for `boolean` (`True`/`Fa
 
 While Jinja natively supports the conversion of an iterable to a `list`, it does not support conversion to a `tuple` or `set`. To help you with using these types, you can use the following functions:
 
-- `set(x)` will convert any iterable `x` to a `set` (e.g. `set([1, 2]) == {1, 2}`)
-- `tuple(x)` will convert any iterable `x` to a `tuple` (e.g. `tuple("abc") == ("a", "b", "c")`)
+- `set(x)` will convert any iterable `x` to a `set` (for example, `set([1, 2]) == {1, 2}`)
+- `tuple(x)` will convert any iterable `x` to a `tuple` (for example, `tuple("abc") == ("a", "b", "c")`)
 
 Note that, in Home Assistant, to convert a value to a `list`, a `string`, an `int`, or a `float`, Jinja has built-in functions with names that correspond to each type.
 
@@ -1129,14 +1199,14 @@ The entities are {{ entities | join(', ') }}
 
 ### Functions and filters to process raw data
 
-These functions are used to process raw value's in a `bytes` format to values in a native Python type or vice-versa.
+These functions are used to process raw value's in a `bytes` format to values in a native Python type or vice versa.
 The `pack` and `unpack` functions can also be used as a filter. They make use of the Python 3 `struct` library.
 See: [Python struct library documentation](https://docs.python.org/3/library/struct.html)
 
 - Filter `value | pack(format_string)` will convert a native type to a `bytes` type object. This will call function `struct.pack(format_string, value)`. Returns `None` if an error occurs or when `format_string` is invalid.
 - Function `pack(value, format_string)` will convert a native type to a `bytes` type object. This will call function `struct.pack(format_string, value)`. Returns `None` if an error occurs or when `format_string` is invalid.
-- Filter `value | unpack(format_string, offset=0)` will try to convert a `bytes` object into a native Python object. The `offset` parameter defines the offset position in bytes from the start of the input `bytes` based buffer. This will call function `struct.unpack_from(format_string, value, offset=offset)`. Returns `None` if an error occurs or when `format_string` is invalid. Note that the filter `unpack` will only return the first `bytes` object, despite the function `struct.unpack_from` supporting to return multiple objects (e.g. with `format_string` being `">hh"`.
-- Function `unpack(value, format_string, offset=0)` will try to convert a `bytes` object into a native Python object. The `offset` parameter defines the offset position in bytes from the start of the input `bytes` based buffer. This will call function `struct.unpack_from(format_string, value, offset=offset)`. Returns `None` if an error occurs or when `format_string` is invalid. Note that the function `unpack` will only return the first `bytes` object, despite the function `struct.unpack_from` supporting to return multiple objects (e.g. with `format_string` being `">hh"`.
+- Filter `value | unpack(format_string, offset=0)` will try to convert a `bytes` object into a native Python object. The `offset` parameter defines the offset position in bytes from the start of the input `bytes` based buffer. This will call function `struct.unpack_from(format_string, value, offset=offset)`. Returns `None` if an error occurs or when `format_string` is invalid. Note that the filter `unpack` will only return the first `bytes` object, despite the function `struct.unpack_from` supporting to return multiple objects (for example, with `format_string` being `">hh"`.
+- Function `unpack(value, format_string, offset=0)` will try to convert a `bytes` object into a native Python object. The `offset` parameter defines the offset position in bytes from the start of the input `bytes` based buffer. This will call function `struct.unpack_from(format_string, value, offset=offset)`. Returns `None` if an error occurs or when `format_string` is invalid. Note that the function `unpack` will only return the first `bytes` object, despite the function `struct.unpack_from` supporting to return multiple objects (for example, with `format_string` being `">hh"`.
 
 {% note %}
 
@@ -1154,24 +1224,53 @@ Some examples:
 
 ### String filters
 
-- Filter `urlencode` will convert an object to a percent-encoded ASCII text string (e.g., for HTTP requests using `application/x-www-form-urlencoded`).
+- Filter `urlencode` will convert an object to a percent-encoded ASCII text string (for example, for use in HTTP requests using `application/x-www-form-urlencoded`).
 - Filter `slugify(separator="_")` will convert a given string into a "slug".
-- Filter `ordinal` will convert an integer into a number defining a position in a series (e.g., `1st`, `2nd`, `3rd`, `4th`, etc).
+- Filter `ordinal` will convert an integer into a number defining a position in a series (such as `1st`, `2nd`, `3rd`, or `4th`).
+- Filter `value | from_hex` Decodes a hex string to raw bytes.
+- Filter `value | base64_encode` Encodes a string or bytes to a base 64 string.
 - Filter `value | base64_decode` Decodes a base 64 string to a string, by default utf-8 encoding is used.
-- Filter `value | base64_decode("ascii")` Decodes a base 64 string to a string, using ascii encoding.
+- Filter `value | base64_decode("ascii")` Decodes a base 64 string to a string, using ASCII encoding.
 - Filter `value | base64_decode(None)` Decodes a base 64 string to raw bytes.
 
 <div class='note'>
 
 Some examples:
 {% raw %}
-
+- `{{ "homeassistant" | base64_encode }}` - renders as `aG9tZWFzc2lzdGFudA==`
 - `{{ "aG9tZWFzc2lzdGFudA==" | base64_decode }}` - renders as `homeassistant`
 - `{{ "aG9tZWFzc2lzdGFudA==" | base64_decode(None) }}` - renders as `b'homeassistant'`
+- `{{ "0F010003" | from_hex }}` - renders as `b'\x0f\x01\x00\x03'`
+- `{{ "0F010003" | from_hex | base64_encode }}` - renders as `DwEAAw==`
 
 {% endraw %}
 
 </div>
+
+### Hashing
+
+The template engine contains a few filters and functions to hash a string of
+data. A few very common hashing algorithms are supported: `md5`, `sha1`,
+`sha256`, and `sha512`.
+
+Some examples:
+
+{% raw %}
+
+- `{{ md5("Home Assistant") }}` - renders as `f3f2b8b3b40084aa87e92b7ffb02ed13885fea2d07`
+- `{{ "Home Assistant" | md5 }}` - renders as `f3f2b8b3b40084aa87e92b7ffb02ed13885fea2d07`
+
+- `{{ sha1("Home Assistant") }}` - renders as `14bffd017c73917bfda2372aaf287570597b8e82`
+- `{{ "Home Assistant" | sha1 }}` - renders as `14bffd017c73917bfda2372aaf287570597b8e82`
+
+- `{{ sha256("Home Assistant") }}` - renders as `a18f473c9d3ed968a598f996dcf0b9de84de4ee04c950d041b61297a25bcea49`
+- `{{ "Home Assistant" | sha256 }}` - renders as `a18f473c9d3ed968a598f996dcf0b9de84de4ee04c950d041b61297a25bcea49`
+
+- `{{ sha512("Home Assistant") }}` - renders as `f251e06eb7d3439e1a86d6497d6a4531c3e8c809f538be62f89babf147d7d63aca4e77ae475b94c654fd38d8f543f778ce80007d6afef379d8a0e5d3ddf7349d`
+- `{{ "Home Assistant" | sha512 }}` - renders as `f251e06eb7d3439e1a86d6497d6a4531c3e8c809f538be62f89babf147d7d63aca4e77ae475b94c654fd38d8f543f778ce80007d6afef379d8a0e5d3ddf7349d`
+
+{% endraw %}
+
 
 ### Regular expressions
 
@@ -1180,9 +1279,160 @@ See: [Python regular expression operations](https://docs.python.org/3/library/re
 
 - Test `string is match(find, ignorecase=False)` will match the find expression at the beginning of the string using regex.
 - Test `string is search(find, ignorecase=False)` will match the find expression anywhere in the string using regex.
-- Filter `string|regex_replace(find='', replace='', ignorecase=False)` will replace the find expression with the replace string using regex. Access to the matched groups in `replace` is possible with `'\\1'`, `'\\2'`, etc.
+- Filter `string|regex_replace(find='', replace='', ignorecase=False)` will replace the find expression with the replace string using regex. Access to the matched groups in `replace` is possible with `'\\1'`, `'\\2'`, and so on.
 - Filter `value | regex_findall(find='', ignorecase=False)` will find all regex matches of the find expression in `value` and return the array of matches.
 - Filter `value | regex_findall_index(find='', index=0, ignorecase=False)` will do the same as `regex_findall` and return the match at index.
+
+### Shuffling
+
+The template engine contains a filter and function to shuffle a list.
+
+Shuffling can happen randomly or reproducibly using a seed. When using a seed
+it will always return the same shuffled list for the same seed.
+
+Some examples:
+
+{% raw %}
+
+- `{{ [1, 2, 3] | shuffle }}` - renders as `[3, 1, 2]` (_random_)
+- `{{ shuffle([1, 2, 3]) }}` - renders as `[3, 1, 2]` (_random_)
+- `{{ shuffle(1, 2, 3) }}` - renders as `[3, 1, 2]` (_random_)
+
+- `{{ [1, 2, 3] | shuffle("random seed") }}` - renders as `[2, 3, 1] (_reproducible_)
+- `{{ shuffle([1, 2, 3], seed="random seed") }}` - renders as `[2, 3, 1] (_reproducible_)
+- `{{ shuffle([1, 2, 3], "random seed") }}`- renders as `[2, 3, 1] (_reproducible_)
+- `{{ shuffle(1, 2, 3, seed="random seed") }}` - renders as `[2, 3, 1] (_reproducible_)
+
+{% endraw %}
+
+### Flatten a list of lists
+
+The template engine provides a filter to flatten a list of lists: `flatten`.
+
+It will take a list of lists and return a single list with all the elements.
+The depth of the flattening can be controlled using the `levels` parameter.
+The flattening process is recursive, so it will flatten all nested lists, until
+the number of levels (if specified) is reached.
+
+Some examples:
+
+{% raw %}
+
+- `{{ flatten([1, [2, [3]], 4, [5 , 6]]) }}` - renders as `[1, 2, 3, 4, 5, 6]`
+- `{{ [1, [2, [3]], 4, [5 , 6]] | flatten }}` - renders as `[1, 2, 3, 4, 5, 6]`
+
+- `{{ flatten([1, [2, [3]]], levels=1) }}` - renders as `[1, 2, [3]]`
+- `{{ [1, [2, [3]]], flatten(levels=1) }}` - renders as `[1, 2, [3]]`
+
+- `{{ flatten([1, [2, [3]]], 1) }}` - renders as `[1, 2, [3]]`
+- `{{ [1, [2, [3]]], flatten(1) }}` - renders as `[1, 2, [3]]`
+
+{% endraw %}
+
+### Find common elements between lists
+
+The template engine provides a filter to find common elements between two lists: `intersect`.
+
+This function returns a list containing all elements that are present in both input lists.
+
+Some examples:
+
+{% raw %}
+
+- `{{ intersect([1, 2, 5, 3, 4, 10], [1, 2, 3, 4, 5, 11, 99]) }}` - renders as `[1, 2, 3, 4, 5]`
+- `{{ [1, 2, 5, 3, 4, 10] | intersect([1, 2, 3, 4, 5, 11, 99]) }}` - renders as `[1, 2, 3, 4, 5]`
+- `{{ intersect(['a', 'b', 'c'], ['b', 'c', 'd']) }}` - renders as `['b', 'c']`
+- `{{ ['a', 'b', 'c'] | intersect(['b', 'c', 'd']) }}` - renders as `['b', 'c']`
+
+{% endraw %}
+
+### Find elements in first list not in second list
+
+The template engine provides a filter to find elements that are in the first list but not in the second list: `difference`.
+This function returns a list containing all elements that are present in the first list but absent from the second list.
+
+Some examples:
+
+{% raw %}
+
+- `{{ difference([1, 2, 5, 3, 4, 10], [1, 2, 3, 4, 5, 11, 99]) }}` - renders as `[10]`
+- `{{ [1, 2, 5, 3, 4, 10] | difference([1, 2, 3, 4, 5, 11, 99]) }}` - renders as `[10]`
+- `{{ difference(['a', 'b', 'c'], ['b', 'c', 'd']) }}` - renders as `['a']`
+- `{{ ['a', 'b', 'c'] | difference(['b', 'c', 'd']) }}` - renders as `['a']`
+
+{% endraw %}
+
+### Find elements that are in either list but not in both
+
+The template engine provides a filter to find elements that are in either of the input lists but not in both: `symmetric_difference`.
+This function returns a list containing all elements that are present in either the first list or the second list, but not in both.
+
+Some examples:
+
+{% raw %}
+
+- `{{ symmetric_difference([1, 2, 5, 3, 4, 10], [1, 2, 3, 4, 5, 11, 99]) }}` - renders as `[10, 11, 99]`
+- `{{ [1, 2, 5, 3, 4, 10] | symmetric_difference([1, 2, 3, 4, 5, 11, 99]) }}` - renders as `[10, 11, 99]`
+- `{{ symmetric_difference(['a', 'b', 'c'], ['b', 'c', 'd']) }}` - renders as `['a', 'd']`
+- `{{ ['a', 'b', 'c'] | symmetric_difference(['b', 'c', 'd']) }}` - renders as `['a', 'd']`
+
+{% endraw %}
+
+### Combine all unique elements from two lists
+
+The template engine provides a filter to combine all unique elements from two lists: `union`.
+This function returns a list containing all unique elements that are present in either the first list or the second list.
+
+Some examples:
+
+{% raw %}
+
+- `{{ union([1, 2, 5, 3, 4, 10], [1, 2, 3, 4, 5, 11, 99]) }}` - renders as `[1, 2, 3, 4, 5, 10, 11, 99]`
+- `{{ [1, 2, 5, 3, 4, 10] | union([1, 2, 3, 4, 5, 11, 99]) }}` - renders as `[1, 2, 3, 4, 5, 10, 11, 99]`
+- `{{ union(['a', 'b', 'c'], ['b', 'c', 'd']) }}` - renders as `['a', 'b', 'c', 'd']`
+- `{{ ['a', 'b', 'c'] | union(['b', 'c', 'd']) }}` - renders as `['a', 'b', 'c', 'd']`
+
+{% endraw %}
+
+### Combining dictionaries
+
+The template engine provides a function and filter to merge multiple dictionaries: `combine`.
+
+It will take multiple dictionaries and merge them into a single dictionary. When used as a filter,
+the filter value is used as the first dictionary. The optional `recursive` parameter determines
+whether nested dictionaries should be merged (defaults to `False`).
+
+Some examples:
+
+{% raw %}
+
+- `{{ {'a': 1, 'b': 2} | combine({'b': 3, 'c': 4}) }}` - renders as `{'a': 1, 'b': 3, 'c': 4}`
+- `{{ combine({'a': 1, 'b': 2}, {'b': 3, 'c': 4}) }}` - renders as `{'a': 1, 'b': 3, 'c': 4}`
+
+- `{{ combine({'a': 1, 'b': {'x': 1}}, {'b': {'y': 2}, 'c': 4}, recursive=True) }}` - renders as `{'a': 1, 'b': {'x': 1, 'y': 2}, 'c': 4}`
+- `{{ combine({'a': 1, 'b': {'x': 1}}, {'b': {'y': 2}, 'c': 4}) }}` - renders as `{'a': 1, 'b': {'y': 2}, 'c': 4}`
+
+{% endraw %}
+
+### Working with macros
+
+Home Assistant provides two additional functions that make macros much more powerful.
+
+{% raw %}
+
+- `apply` is both a filter and a test that allows you to use any callable (macros or functions) wherever
+you can use other filters and tests. `apply` also passes along any additional parameters to the function.
+For example, if you had a function called `double`, you could call
+`{{ [1, 2, 3, 4] | map('apply', double) | list }}`, which would render as `[2, 4, 6, 8]`.  
+Alternatively, if you had a function called `is_multiple_of`, you could call
+`{{ [1, 2, 3, 4] | select('apply', is_multiple_of, 2) | list }}`, which would render as `[2, 4]`.
+- `as_function` is a filter that takes a macro that has a named parameter called `returns`. The macro can
+then call `{%- do returns(return_value) -%}`. After passing this macro into `as_function`, the resulting
+function returns your return value directly, preserving the underlying data type rather than rendering
+a string. You can return dictionaries, numbers, `True`/`False` (allowing you to write your own tests when
+used with `apply`), or any other value your code might produce.
+
+{% endraw %}
 
 ## Merge action responses
 
@@ -1443,7 +1693,7 @@ The following overview contains a couple of options to get the needed values:
 
 {% endraw %}
 
-To evaluate a response, go to **{% my developer_template title="Developer Tools > Template" %}**, create your output in "Template editor", and check the result.
+To evaluate a response, go to {% my developer_template title="**Settings** > **Developer tools** > **Template**" %}, create your output in **Template editor**, and check the result.
 
 {% raw %}
 
@@ -1479,10 +1729,12 @@ Example value template:
 With given payload:
 
 ```json
-{ "state": "ON", "temperature": 21.902 }
+{ "state": "ON", "temperature": 21.902, "humidity": null }
 ```
 
 Template {% raw %}`{{ value_json.temperature | round(1) }}`{% endraw %} renders to `21.9`.
+
+Template {% raw %}`{{ value_json.humidity }}`{% endraw %} renders to `None`.
 
 {% endnote %}
 
@@ -1513,6 +1765,44 @@ When a command template renders to a valid `bytes` literal, then MQTT will publi
 - Template {% raw %}`{{ "16" }}`{% endraw %} renders to payload encoded string `"16"`.
 - Template {% raw %}`{{ 16 }}`{% endraw %} renders to payload encoded string `"16"`.
 - Template {% raw %}`{{ pack(0x10, ">B") }}`{% endraw %} renders to a raw 1 byte payload `0x10`.
+
+### Determining types
+
+When working with templates, it can be useful to determine the type of
+the returned value from a method or the type of a variable at times.
+
+For this, Home Assistant provides the `typeof()` template function and filter,
+which is inspired by the [JavaScript](https://en.wikipedia.org/wiki/JavaScript)
+`typeof` operator. It reveals the type of the given value.
+
+This is mostly useful when you are debugging or playing with templates in
+the developer tools of Home Assistant. However, it might be useful in some
+other cases as well.
+
+Some examples:
+
+{% raw %}
+
+- `{{ typeof(42) }}` - renders as `int`
+- `{{ typeof(42.0) }}` - renders as `float`
+- `{{ typeof("42") }}` - renders as `str`
+- `{{ typeof([1, 2, 3]) }}` - renders as `list`
+- `{{ typeof({"key": "value"}) }}` - renders as `dict`
+- `{{ typeof(True) }}` - renders as `bool`
+- `{{ typeof(None) }}` - renders as `NoneType`
+
+- `{{ 42 | typeof }}` - renders as `int`
+- `{{ 42.0 | typeof }}` - renders as `float`
+- `{{ "42" | typeof }}` - renders as `str`
+- `{{ [1, 2, 3] | typeof }}` - renders as `list`
+- `{{ {"key": "value"} | typeof }}` - renders as `dict`
+- `{{ True | typeof }}` - renders as `bool`
+- `{{ None | typeof }}` - renders as `NoneType`
+
+- `{{ some_variable | typeof }}` - renders the type of `some_variable`
+- `{{ states("sensor.living_room") | typeof }}` - renders the type of the result of `states()` function
+
+{% endraw %}
 
 ## Some more things to keep in mind
 

@@ -16,7 +16,7 @@ ha_codeowners:
 ha_integration_type: service
 ---
 
-This Radarr integration pulls data from a given [Radarr](https://radarr.video/) instance.
+The **Radarr** {% term integration %} pulls data from a given [Radarr](https://radarr.video/) instance.
 Your API key can be found in Settings > General in the Radarr Web UI.
 
 {% include integrations/config_flow.md %}
@@ -27,7 +27,7 @@ Each added configuration entry will create the following binary sensor:
 
 - **Health**: Shows if the Radarr instance is healthy. This is determined to have a problem if Radarr cannot communicate with any enabled download clients or no indexers are available for RSS feeds or searches.
 
-A calendar entity will also be created indicating the day of release and the type of release, such as Cinemas, Digital, or Physical.
+A {% term calendar %} entity will also be created indicating the day of release and the type of release, such as Cinemas, Digital, or Physical.
 
 Each added configuration entry will create the following sensors:
 

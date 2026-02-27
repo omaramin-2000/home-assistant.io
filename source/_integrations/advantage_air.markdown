@@ -26,7 +26,7 @@ ha_platforms:
   - sensor
   - switch
   - update
-ha_integration_type: integration
+ha_integration_type: hub
 ---
 
 The **Advantage Air** {% term integration %} allows you to control [Advantage Air](https://www.advantageair.com.au/) Air Conditioning controllers into Home Assistant.
@@ -68,7 +68,7 @@ The integration will create a binary sensor for each zone that has a motion sens
 
 ### Switch
 
-The integration will create switch entities to toggle the MyFan/ezFan setting, and to toggle air conditioning fresh air mode, if they are supported by your hardware.
+The integration will create switch entities to toggle the MyFan/ezFan setting, to toggle air conditioning fresh air mode, and to toggle MySleep$aver, if they are supported by your hardware.
 
 With MyPlace, any relays will be created as switch entities.
 
@@ -86,9 +86,9 @@ With MyLights or MyPlace, light entities will be created for each light.
 
 ## Actions
 
-### Action `advantage_air.set_time_to`
+### Action: Set time to
 
-Set the On/Off Timer using the relevant sensor entity.
+The `advantage_air.set_time_to` action is used to set the On/Off Timer using the relevant sensor entity.
 
 | Data attribute | Optional | Description |
 | ---------------------- | -------- | ----------- |
