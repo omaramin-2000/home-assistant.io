@@ -11,6 +11,7 @@ ha_iot_class: Local Push
 ha_config_flow: true
 ha_codeowners:
   - '@frenck'
+  - '@mik-laj'
 ha_domain: wled
 ha_zeroconf: true
 ha_platforms:
@@ -23,6 +24,7 @@ ha_platforms:
   - switch
   - update
 ha_integration_type: device
+ha_quality_scale: platinum
 ---
 
 [WLED](https://kno.wled.ge) is a fast and feature-rich
@@ -55,6 +57,13 @@ latest release from the [WLED GitHub releases page](https://github.com/wled/WLED
 {% configuration_basic %}
 Host:
     description: "Hostname or IP address of your WLED device."
+{% endconfiguration_basic %}
+
+{% include integrations/option_flow.md %}
+
+{% configuration_basic %}
+Keep Master Light:
+  description: Keep the master light (the main light entity that controls the entire WLED device), even if there is only 1 segment. This ensures the master light is always there, in case you are automating segments to be added and removed dynamically.
 {% endconfiguration_basic %}
 
 ## Lights
@@ -156,13 +165,6 @@ directly from Home Assistant.
 The update {% term entity %} will only provide updates to stable versions,
 unless you are using a beta version of WLED. In that case, the update
 {% term entity %} will also provide updates to newer beta versions.
-
-{% include integrations/option_flow.md %}
-
-{% configuration_basic %}
-Keep Master Light:
-  description: Keep the master light, even if there is only 1 segment. This ensures the master light is always there, in case you are automating segments to appear and remove dynamically.
-{% endconfiguration_basic %}
 
 ## Data updates
 
@@ -365,4 +367,3 @@ If the error persists, reconfiguring the integration with the correct IP address
 This integration follows standard integration removal. No extra steps are required.
 
 {% include integrations/remove_device_service.md %}
-
